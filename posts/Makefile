@@ -7,7 +7,7 @@ init:
 	go get github.com/micro/micro/v3/cmd/protoc-gen-micro
 .PHONY: proto
 proto:
-	protoc --proto_path=. --micro_out=. --go_out=. proto/posts.proto
+	protoc -Iproto --micro_out=proto --go_out=proto posts.proto
 	
 .PHONY: build
 build:

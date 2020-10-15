@@ -13,6 +13,8 @@ import (
 	"github.com/micro/micro/v3/service/errors"
 	"github.com/micro/micro/v3/service/logger"
 	"github.com/micro/micro/v3/service/store"
+
+	tagProtos "github.com/micro-community/micro-blog/tags/proto"
 )
 
 const (
@@ -23,7 +25,9 @@ const (
 )
 
 //Posts Handler of Blog
-type Posts struct{}
+type Posts struct {
+	Tags tagProtos.TagsService
+}
 
 //Save a post
 func (p *Posts) Save(ctx context.Context, req *pb.SaveRequest, rsp *pb.SaveResponse) error {
