@@ -1,24 +1,51 @@
 syntax = "proto3";
 
-package post;
+package posts;
 option go_package = "proto;posts";
 
 service Posts {
+	// Query currently only supports read by slug or timestamp, no listing.
+	rpc Query(QueryRequest) returns (QueryResponse) {}
 	rpc Save(SaveRequest) returns (SaveResponse) {}
+	rpc Delete(DeleteRequest) returns (DeleteResponse) {}
 }
 
 message Post {
-	string id = 1; //post id
+	string id = 1; //article id
 	string title = 2;
 	string slug = 3;
-	string content = 4; 
-	int64 timestamp = 5;
-	repeated string tagNames = 6;
+	string content = 4;
+	int64 created = 5;
+	int64 updated = 6;
+	string author = 7;
+	repeated string tags = 8;
 }
+
+message QueryRequest {
+	string slug = 1;
+	int64 offset = 2;
+	int64 limit = 3;
+}
+
+message QueryResponse {
+	repeated Post posts = 1;
+}
+
 message SaveRequest {
-	Post post = 1;
+	string id = 1;
+	string title = 2;
+	string slug = 3;
+	string content = 4;
+	int64 timestamp = 5;
+	repeated string tags = 6;
 }
 
 message SaveResponse {
-	Post post = 1;
+	string id = 1;
 }
+
+message DeleteRequest {
+	string id = 1;
+}
+
+message DeleteResponse {}

@@ -42,7 +42,10 @@ func NewPostsEndpoints() []*api.Endpoint {
 // Client API for Posts service
 
 type PostsService interface {
+	// Query currently only supports read by slug or timestamp, no listing.
+	Query(ctx context.Context, in *QueryRequest, opts ...client.CallOption) (*QueryResponse, error)
 	Save(ctx context.Context, in *SaveRequest, opts ...client.CallOption) (*SaveResponse, error)
+	Delete(ctx context.Context, in *DeleteRequest, opts ...client.CallOption) (*DeleteResponse, error)
 }
 
 type postsService struct {
@@ -57,6 +60,16 @@ func NewPostsService(name string, c client.Client) PostsService {
 	}
 }
 
+func (c *postsService) Query(ctx context.Context, in *QueryRequest, opts ...client.CallOption) (*QueryResponse, error) {
+	req := c.c.NewRequest(c.name, "Posts.Query", in)
+	out := new(QueryResponse)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *postsService) Save(ctx context.Context, in *SaveRequest, opts ...client.CallOption) (*SaveResponse, error) {
 	req := c.c.NewRequest(c.name, "Posts.Save", in)
 	out := new(SaveResponse)
@@ -67,15 +80,30 @@ func (c *postsService) Save(ctx context.Context, in *SaveRequest, opts ...client
 	return out, nil
 }
 
+func (c *postsService) Delete(ctx context.Context, in *DeleteRequest, opts ...client.CallOption) (*DeleteResponse, error) {
+	req := c.c.NewRequest(c.name, "Posts.Delete", in)
+	out := new(DeleteResponse)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Server API for Posts service
 
 type PostsHandler interface {
+	// Query currently only supports read by slug or timestamp, no listing.
+	Query(context.Context, *QueryRequest, *QueryResponse) error
 	Save(context.Context, *SaveRequest, *SaveResponse) error
+	Delete(context.Context, *DeleteRequest, *DeleteResponse) error
 }
 
 func RegisterPostsHandler(s server.Server, hdlr PostsHandler, opts ...server.HandlerOption) error {
 	type posts interface {
+		Query(ctx context.Context, in *QueryRequest, out *QueryResponse) error
 		Save(ctx context.Context, in *SaveRequest, out *SaveResponse) error
+		Delete(ctx context.Context, in *DeleteRequest, out *DeleteResponse) error
 	}
 	type Posts struct {
 		posts
@@ -88,6 +116,14 @@ type postsHandler struct {
 	PostsHandler
 }
 
+func (h *postsHandler) Query(ctx context.Context, in *QueryRequest, out *QueryResponse) error {
+	return h.PostsHandler.Query(ctx, in, out)
+}
+
 func (h *postsHandler) Save(ctx context.Context, in *SaveRequest, out *SaveResponse) error {
 	return h.PostsHandler.Save(ctx, in, out)
+}
+
+func (h *postsHandler) Delete(ctx context.Context, in *DeleteRequest, out *DeleteResponse) error {
+	return h.PostsHandler.Delete(ctx, in, out)
 }

@@ -18,6 +18,8 @@ func main() {
 	// Register handler
 	pb.RegisterPostsHandler(srv.Server(), new(handler.Posts))
 
+	srv.Handle(&handler.Posts{})
+
 	// Run service
 	if err := srv.Run(); err != nil {
 		logger.Fatal(err)
