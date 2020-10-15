@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package tags;
 
-option go_package = "proto;tags";
+option go_package = ".;tags";
 
 service Tags {
 	// Add a tag to a parent
