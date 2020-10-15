@@ -8,5 +8,5 @@ type Post struct {
 	Content         string   `json:"content"`
 	CreateTimestamp int64    `json:"create_timestamp"`
 	UpdateTimestamp int64    `json:"update_timestamp"`
-	TagNames        []string `json:"tagNames"`
+	Tags            []string `json:"tags"`
 }

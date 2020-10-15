@@ -16,9 +16,10 @@ import (
 )
 
 const (
-	idPrefix        = "id"
+	tagType         = "post-tag"
 	slugPrefix      = "slug"
-	timestampPrefix = "timestamp"
+	idPrefix        = "id"
+	timeStampPrefix = "timestamp"
 )
 
 //Posts Handler of Blog
@@ -28,42 +29,41 @@ type Posts struct{}
 func (p *Posts) Save(ctx context.Context, req *pb.SaveRequest, rsp *pb.SaveResponse) error {
 	logger.Info("Received Posts.Save request")
 
-	if len(req.Post.Id) == 0 || len(req.Post.Title) == 0 || len(req.Post.Content) == 0 {
+	if len(req.Id) == 0 || len(req.Title) == 0 || len(req.Content) == 0 {
 		return errors.BadRequest("posts.Save", "ID, title or content is missing")
 	}
 
 	// read by parent ID so we can check if it exists without slug changes getting in the way.
-	records, err := store.Read(fmt.Sprintf("%v:%v", idPrefix, req.Post.Id))
+	records, err := store.Read(fmt.Sprintf("%v:%v", idPrefix, req.Id))
 	if err != nil && err != store.ErrNotFound {
 		return err
 	}
-	postSlug := slug.Make(req.Post.Title)
+	postSlug := slug.Make(req.Title)
 
 	// If no existing record is found, create a new one
 	if len(records) == 0 {
 		return p.savePost(ctx, nil, &model.Post{
-			ID:              req.Post.Id,
-			Title:           req.Post.Title,
-			Content:         req.Post.Content,
-			TagNames:        req.Post.TagNames,
+			ID:              req.Id,
+			Title:           req.Title,
+			Content:         req.Content,
+			Tags:            req.Tags,
 			Slug:            postSlug,
 			CreateTimestamp: time.Now().Unix(),
 		})
 	}
 
 	record := records[0]
-
 	oldPost := &model.Post{}
-	if err := json.Unmarshal(record.Value, oldPost); err != nil {
-		return err
+	err = json.Unmarshal(record.Value, oldPost)
+	if err != nil {
+		return errors.InternalServerError("posts.save.unmarshal", "Failed to unmarshal old post: %v", err.Error())
 	}
-
 	post := &model.Post{
-		ID:              req.Post.Id,
-		Title:           req.Post.Title,
-		Content:         req.Post.Content,
-		Slug:            slug.Make(req.Post.Title),
-		TagNames:        req.Post.TagNames,
+		ID:              req.Id,
+		Title:           req.Title,
+		Content:         req.Content,
+		Slug:            slug.Make(req.Title),
+		Tags:            req.Tags,
 		CreateTimestamp: time.Now().Unix(),
 		UpdateTimestamp: time.Now().Unix(),
 	}
@@ -121,7 +121,78 @@ func (p *Posts) savePost(ctx context.Context, oldPost, post *model.Post) error {
 	// Save post by timeStamp
 	return store.Write(&store.Record{
 		// We revert the timestamp so the order is chronologically reversed
-		Key:   fmt.Sprintf("%v:%v", timestampPrefix, math.MaxInt64-post.CreateTimestamp),
+		Key:   fmt.Sprintf("%v:%v", timeStampPrefix, math.MaxInt64-post.CreateTimestamp),
 		Value: bytes,
 	})
+}
+
+// Query the posts
+func (p *Posts) Query(ctx context.Context, req *pb.QueryRequest, rsp *pb.QueryResponse) error {
+	var records []*store.Record
+	var err error
+	if len(req.Slug) > 0 {
+		key := fmt.Sprintf("%v:%v", slugPrefix, req.Slug)
+		logger.Infof("Reading post by slug: %v", req.Slug)
+		records, err = store.Read("", store.Prefix(key))
+	} else {
+		key := fmt.Sprintf("%v:", timeStampPrefix)
+		var limit uint
+		limit = 20
+		if req.Limit > 0 {
+			limit = uint(req.Limit)
+		}
+		logger.Infof("Listing posts, offset: %v, limit: %v", req.Offset, limit)
+		records, err = store.Read("", store.Prefix(key),
+			store.Offset(uint(req.Offset)),
+			store.Limit(limit))
+	}
+
+	if err != nil {
+		return errors.BadRequest("posts.query.store-read", "Failed to read from store: %v", err.Error())
+	}
+	// serialize the response
+	rsp.Posts = make([]*pb.Post, len(records))
+	for i, record := range records {
+		postRecord := &model.Post{}
+		if err := json.Unmarshal(record.Value, postRecord); err != nil {
+			return err
+		}
+
+		rsp.Posts[i] = &pb.Post{
+			Id:      postRecord.ID,
+			Title:   postRecord.Title,
+			Slug:    postRecord.Slug,
+			Content: postRecord.Content,
+			Tags:    postRecord.Tags,
+		}
+	}
+	return nil
+}
+
+// Delete a post
+func (p *Posts) Delete(ctx context.Context, req *pb.DeleteRequest, rsp *pb.DeleteResponse) error {
+	records, err := store.Read(fmt.Sprintf("%v:%v", idPrefix, req.Id))
+	if err == store.ErrNotFound {
+		return errors.NotFound("posts.Delete", "Post not found")
+	} else if err != nil {
+		return err
+	}
+
+	post := &model.Post{}
+	if err := json.Unmarshal(records[0].Value, post); err != nil {
+		return err
+	}
+
+	// Delete by ID
+	if err = store.Delete(fmt.Sprintf("%v:%v", idPrefix, post.ID)); err != nil {
+		return err
+	}
+
+	// Delete by slug
+	if err := store.Delete(fmt.Sprintf("%v:%v", slugPrefix, post.Slug)); err != nil {
+		return err
+	}
+
+	// Delete by timeStamp
+	return store.Delete(fmt.Sprintf("%v:%v", timeStampPrefix, post.CreateTimestamp))
 }
