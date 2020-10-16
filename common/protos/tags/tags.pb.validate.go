@@ -121,8 +121,6 @@ func (m *AddRequest) Validate() error {
 
 	// no validation rules for Type
 
-	// no validation rules for Title
-
 	// no validation rules for ResourceCreated
 
 	return nil
@@ -259,8 +257,6 @@ func (m *RemoveRequest) Validate() error {
 
 	// no validation rules for Type
 
-	// no validation rules for Title
-
 	return nil
 }
 
@@ -392,8 +388,6 @@ func (m *UpdateRequest) Validate() error {
 	}
 
 	// no validation rules for Type
-
-	// no validation rules for Title
 
 	// no validation rules for Description
 

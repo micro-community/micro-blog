@@ -28,7 +28,7 @@ message Tag {
 message AddRequest {
 	string resourceID = 1;
 	string type = 2;
-	string title = 3;
+	repeated string titles = 3; //can handle bulk 
 	int64 resourceCreated = 4;
 }
 
@@ -37,14 +37,14 @@ message AddResponse{}
 message RemoveRequest {
 	string resourceID = 1;
 	string type = 2;
-	string title = 3;
+	repeated string titles = 3; //can handle bulk 
 }
 
 message RemoveResponse{}
 
 message UpdateRequest {
 	string type = 1;
-	string title = 2;
+	repeated string titles = 2; //can handle bulk 
 	string description = 3;
 }
 

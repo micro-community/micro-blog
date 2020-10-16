@@ -163,17 +163,18 @@ func (p *Posts) savePost(ctx context.Context, oldPost, post *model.Post) error {
 	//this is a new post
 	if oldPost == nil {
 
+		var tagNames []string
 		for _, tagName := range post.Tags {
-
-			if _, err := p.Tags.Add(ctx, &tags.AddRequest{
-				ResourceID: post.ID,
-				Type:       tagType,
-				Title:      tagName,
-			}); err != nil {
-				return err
-			}
-
+			tagNames = append(tagNames, tagName)
 		}
+		if _, err := p.Tags.Add(ctx, &tags.AddRequest{
+			ResourceID: post.ID,
+			Type:       tagType,
+			Titles:     tagNames,
+		}); err != nil {
+			return err
+		}
+
 		// this is all
 		return nil
 	}
@@ -184,7 +185,7 @@ func (p *Posts) savePost(ctx context.Context, oldPost, post *model.Post) error {
 }
 
 //diffTags to update tags
-func (p *Posts) diffTags(ctx context.Context, parentID string, oldTagNames, newTagNames []string) error {
+func (p *Posts) diffTags(ctx context.Context, resourceID string, oldTagNames, newTagNames []string) error {
 
 	oldTags := map[string]struct{}{}
 	for _, v := range oldTagNames {
@@ -194,6 +195,50 @@ func (p *Posts) diffTags(ctx context.Context, parentID string, oldTagNames, newT
 	newTags := map[string]struct{}{}
 	for _, v := range newTagNames {
 		newTags[v] = struct{}{}
+	}
+
+	//find removed tags
+	var tags2remove []string
+	for i := range oldTags {
+		_, stillThere := newTags[i]
+		if !stillThere {
+			tags2remove = append(tags2remove, i)
+		}
+	}
+
+	if len(tags2remove) > 0 {
+		_, err := p.Tags.Remove(ctx, &tags.RemoveRequest{
+			ResourceID: resourceID,
+			Type:       tagType,
+			Titles:     tags2remove,
+		})
+		if err != nil {
+			logger.Errorf("Error decreasing count for tag '%v' with type '%v' for Post '%v'", tags2remove, tagType, resourceID)
+		}
+
+	}
+
+	//find added tags
+	var tags2add []string
+	for i := range newTags {
+		_, exist := oldTags[i]
+		if !exist {
+			tags2add = append(tags2add, i)
+		}
+	}
+
+	if len(tags2add) > 0 {
+
+		_, err := p.Tags.Add(ctx, &tags.AddRequest{
+			ResourceID: resourceID,
+			Type:       tagType,
+			Titles:     tags2add,
+		})
+
+		if err != nil {
+			logger.Errorf("Error increasing count for tag '%v' with type '%v' for parent '%v': %v", tags2add, tagType, resourceID, err)
+		}
+
 	}
 
 	return nil
