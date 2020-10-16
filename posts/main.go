@@ -1,9 +1,8 @@
 package main
 
 import (
+	"github.com/micro-community/micro-blog/common/protos/tags"
 	"github.com/micro-community/micro-blog/posts/handler"
-	pb "github.com/micro-community/micro-blog/posts/proto"
-
 	"github.com/micro/micro/v3/service"
 	"github.com/micro/micro/v3/service/logger"
 )
@@ -15,10 +14,9 @@ func main() {
 		service.Version("latest"),
 	)
 
-	// Register handler
-	pb.RegisterPostsHandler(srv.Server(), new(handler.Posts))
-
-	srv.Handle(&handler.Posts{})
+	srv.Handle(&handler.Posts{
+		Tags: tags.NewTagsService("tags", srv.Client()),
+	})
 
 	// Run service
 	if err := srv.Run(); err != nil {

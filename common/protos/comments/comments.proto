@@ -2,4 +2,4 @@ syntax = "proto3";
 
 package comments;
 
-option go_package = "proto;comments";
+option go_package = ".;comments";
