@@ -32,57 +32,89 @@ type Posts struct {
 func (p *Posts) Save(ctx context.Context, req *pb.SaveRequest, rsp *pb.SaveResponse) error {
 	logger.Info("Received Posts.Save request")
 
-	if len(req.Id) == 0 || len(req.Title) == 0 || len(req.Content) == 0 {
-		return errors.BadRequest("posts.Save", "ID, title or content is missing")
+	if len(req.Id) == 0 {
+		return errors.BadRequest("posts.Save.input-check", "ID is missing")
 	}
 
-	// read by parent ID so we can check if it exists without slug changes getting in the way.
+	// read by post id.
 	records, err := store.Read(fmt.Sprintf("%v:%v", idPrefix, req.Id))
 	if err != nil && err != store.ErrNotFound {
-		return err
+		return errors.InternalServerError("posts.Save.store-id-read", "Failed to read post by id: %v", err.Error())
 	}
+
 	postSlug := slug.Make(req.Title)
 
 	// If no existing record is found, create a new one
 	if len(records) == 0 {
-		return p.savePost(ctx, nil, &model.Post{
+		post := &model.Post{
 			ID:              req.Id,
 			Title:           req.Title,
 			Content:         req.Content,
 			Tags:            req.Tags,
 			Slug:            postSlug,
 			CreateTimestamp: time.Now().Unix(),
-		})
+		}
+
+		err := p.savePost(ctx, nil, post)
+		if err != nil {
+			return errors.InternalServerError("posts.save.post-save", "Failed to save new post: %v", err.Error())
+		}
+		return nil
 	}
 
+	// there is some posts with this id, so we update current post
 	record := records[0]
 	oldPost := &model.Post{}
 	err = json.Unmarshal(record.Value, oldPost)
 	if err != nil {
 		return errors.InternalServerError("posts.save.unmarshal", "Failed to unmarshal old post: %v", err.Error())
 	}
+	//new post from old
 	post := &model.Post{
 		ID:              req.Id,
-		Title:           req.Title,
-		Content:         req.Content,
-		Slug:            slug.Make(req.Title),
-		Tags:            req.Tags,
-		CreateTimestamp: time.Now().Unix(),
+		Title:           oldPost.Title,
+		Content:         oldPost.Content,
+		Slug:            oldPost.Slug,
+		Tags:            oldPost.Tags,
+		CreateTimestamp: oldPost.CreateTimestamp,
 		UpdateTimestamp: time.Now().Unix(),
+	}
+
+	//update article content
+	if len(req.Title) > 0 {
+		post.Title = req.Title
+		post.Slug = slug.Make(post.Title)
+	}
+	if len(req.Slug) > 0 {
+		post.Slug = req.Slug
+	}
+	if len(req.Content) > 0 {
+		post.Content = req.Content
+	}
+	if len(req.Tags) > 0 {
+		//update :only remove the tags
+		if len(req.Tags) == 1 && req.Tags[0] == "" {
+			post.Tags = []string{}
+		} else {
+			post.Tags = req.Tags
+		}
 	}
 
 	// Check if slug exists
 	recordsBySlug, err := store.Read(fmt.Sprintf("%v:%v", slugPrefix, postSlug))
 	if err != nil && err != store.ErrNotFound {
-		return err
+		return errors.InternalServerError("posts.Save.store-read", "Failed to read post by slug: %v", err.Error())
 	}
 
-	otherSlugPost := &model.Post{}
-	if err := json.Unmarshal(record.Value, otherSlugPost); err != nil {
-		return err
-	}
-	if len(recordsBySlug) > 0 && oldPost.ID != otherSlugPost.ID {
-		return errors.BadRequest("posts.Save", "An other post with this slug already exists")
+	if len(recordsBySlug) > 0 {
+		otherSlugPost := &model.Post{}
+		err := json.Unmarshal(recordsBySlug[0].Value, otherSlugPost)
+		if oldPost.ID != otherSlugPost.ID {
+			if err != nil {
+				return errors.InternalServerError("posts.Save.slug-unmarshal", "Error unmarshaling other post with same slug: %v", err.Error())
+			}
+		}
+		return errors.BadRequest("posts.Save.slug-check", "An other post with this slug already exists")
 	}
 
 	return p.savePost(ctx, oldPost, post)
@@ -97,36 +129,75 @@ func (p *Posts) savePost(ctx context.Context, oldPost, post *model.Post) error {
 	}
 
 	// Save post by content ID
-	record := &store.Record{
+	if err := store.Write(&store.Record{
 		Key:   fmt.Sprintf("%v:%v", idPrefix, post.ID),
 		Value: bytes,
-	}
-	if err := store.Write(record); err != nil {
+	}); err != nil {
 		return err
 	}
 
 	// Delete old by slug index if the slug has changed
-	if oldPost.Slug != post.Slug {
-		if err := store.Delete(fmt.Sprintf("%v:%v", slugPrefix, post.Slug)); err != nil {
+	if oldPost != nil && oldPost.Slug != post.Slug {
+		if err := store.Delete(fmt.Sprintf("%v:%v", slugPrefix, oldPost.Slug)); err != nil {
 			return err
 		}
 	}
 
 	// Save post by slug
-	slugRecord := &store.Record{
+	if err := store.Write(&store.Record{
 		Key:   fmt.Sprintf("%v:%v", slugPrefix, post.Slug),
 		Value: bytes,
-	}
-	if err := store.Write(slugRecord); err != nil {
+	}); err != nil {
 		return err
 	}
 
 	// Save post by timeStamp
-	return store.Write(&store.Record{
+	if err := store.Write(&store.Record{
 		// We revert the timestamp so the order is chronologically reversed
 		Key:   fmt.Sprintf("%v:%v", timeStampPrefix, math.MaxInt64-post.CreateTimestamp),
 		Value: bytes,
-	})
+	}); err != nil {
+		return err
+	}
+
+	//this is a new post
+	if oldPost == nil {
+
+		for _, tagName := range post.Tags {
+
+			if _, err := p.Tags.Add(ctx, &tags.AddRequest{
+				ResourceID: post.ID,
+				Type:       tagType,
+				Title:      tagName,
+			}); err != nil {
+				return err
+			}
+
+		}
+		// this is all
+		return nil
+	}
+
+	//update tags
+	return p.diffTags(ctx, post.ID, oldPost.Tags, post.Tags)
+
+}
+
+//diffTags to update tags
+func (p *Posts) diffTags(ctx context.Context, parentID string, oldTagNames, newTagNames []string) error {
+
+	oldTags := map[string]struct{}{}
+	for _, v := range oldTagNames {
+		oldTags[v] = struct{}{}
+	}
+
+	newTags := map[string]struct{}{}
+	for _, v := range newTagNames {
+		newTags[v] = struct{}{}
+	}
+
+	return nil
+
 }
 
 // Query the posts
