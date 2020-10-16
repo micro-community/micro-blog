@@ -117,11 +117,13 @@ func (m *AddRequest) Validate() error {
 		return nil
 	}
 
-	// no validation rules for ParentID
+	// no validation rules for ResourceID
 
 	// no validation rules for Type
 
 	// no validation rules for Title
+
+	// no validation rules for ResourceCreated
 
 	return nil
 }
@@ -253,7 +255,7 @@ func (m *RemoveRequest) Validate() error {
 		return nil
 	}
 
-	// no validation rules for ParentID
+	// no validation rules for ResourceID
 
 	// no validation rules for Type
 
@@ -525,7 +527,7 @@ func (m *ListRequest) Validate() error {
 		return nil
 	}
 
-	// no validation rules for ParentID
+	// no validation rules for ResourceID
 
 	// no validation rules for Type
 

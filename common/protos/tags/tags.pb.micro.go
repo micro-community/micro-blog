@@ -42,11 +42,11 @@ func NewTagsEndpoints() []*api.Endpoint {
 // Client API for Tags service
 
 type TagsService interface {
-	// Add a tag to a parent
+	// Add a tag to a resource
 	Add(ctx context.Context, in *AddRequest, opts ...client.CallOption) (*AddResponse, error)
-	// Remove a tag from a parent
+	// Remove a tag from a resource
 	Remove(ctx context.Context, in *RemoveRequest, opts ...client.CallOption) (*RemoveResponse, error)
-	// List tags by
+	// List tags
 	List(ctx context.Context, in *ListRequest, opts ...client.CallOption) (*ListResponse, error)
 	// Change properties of a tag, currently only the title and description
 	Update(ctx context.Context, in *UpdateRequest, opts ...client.CallOption) (*UpdateResponse, error)
@@ -107,11 +107,11 @@ func (c *tagsService) Update(ctx context.Context, in *UpdateRequest, opts ...cli
 // Server API for Tags service
 
 type TagsHandler interface {
-	// Add a tag to a parent
+	// Add a tag to a resource
 	Add(context.Context, *AddRequest, *AddResponse) error
-	// Remove a tag from a parent
+	// Remove a tag from a resource
 	Remove(context.Context, *RemoveRequest, *RemoveResponse) error
-	// List tags by
+	// List tags
 	List(context.Context, *ListRequest, *ListResponse) error
 	// Change properties of a tag, currently only the title and description
 	Update(context.Context, *UpdateRequest, *UpdateResponse) error
