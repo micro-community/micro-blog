@@ -1,5 +1,13 @@
 package model
 
+// Some Const data for post
+const (
+	TagType         = "post-tag"
+	SlugPrefix      = "slug"
+	IDPrefix        = "id"
+	TimeStampPrefix = "timestamp"
+)
+
 //Post for article
 type Post struct {
 	ID              string   `json:"id"`

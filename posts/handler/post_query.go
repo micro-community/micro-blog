@@ -21,15 +21,15 @@ func (p *Posts) Query(ctx context.Context, req *pb.QueryRequest, rsp *pb.QueryRe
 	var err error
 
 	if len(req.Slug) > 0 { // first to search by slug
-		key := fmt.Sprintf("%v:%v", slugPrefix, req.Slug)
+		key := fmt.Sprintf("%v:%v", model.SlugPrefix, req.Slug)
 		logger.Infof("Reading post by slug: %v", req.Slug)
 		records, err = store.Read("", store.Prefix(key))
 	} else if len(req.Id) > 0 { //then by id
-		key := fmt.Sprintf("%v:%v", idPrefix, req.Id)
+		key := fmt.Sprintf("%v:%v", model.IDPrefix, req.Id)
 		logger.Infof("Reading post by id: %v", req.Id)
 		records, err = store.Read("", store.Prefix(key))
 	} else { //last by timestamp
-		key := fmt.Sprintf("%v:", timeStampPrefix)
+		key := fmt.Sprintf("%v:", model.TimeStampPrefix)
 		var limit uint
 		limit = 20 //default if without limition in req
 		if req.Limit > 0 {

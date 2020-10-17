@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math"
 	"time"
 
 	"github.com/gosimple/slug"
@@ -16,16 +15,10 @@ import (
 	"github.com/micro/micro/v3/service/store"
 )
 
-const (
-	tagType         = "post-tag"
-	slugPrefix      = "slug"
-	idPrefix        = "id"
-	timeStampPrefix = "timestamp"
-)
-
 //Posts Handler of Blog
 type Posts struct {
 	Tags tags.TagsService
+	DB   *model.DB
 }
 
 //Save a post
@@ -37,7 +30,7 @@ func (p *Posts) Save(ctx context.Context, req *pb.SaveRequest, rsp *pb.SaveRespo
 	}
 
 	// read by post id.
-	records, err := store.Read(fmt.Sprintf("%v:%v", idPrefix, req.Id))
+	records, err := store.Read(fmt.Sprintf("%v:%v", model.IDPrefix, req.Id))
 	if err != nil && err != store.ErrNotFound {
 		return errors.InternalServerError("posts.Save.store-id-read", "Failed to read post by id: %v", err.Error())
 	}
@@ -101,7 +94,7 @@ func (p *Posts) Save(ctx context.Context, req *pb.SaveRequest, rsp *pb.SaveRespo
 	}
 
 	// Check if slug exists
-	recordsBySlug, err := store.Read(fmt.Sprintf("%v:%v", slugPrefix, postSlug))
+	recordsBySlug, err := store.Read(fmt.Sprintf("%v:%v", model.SlugPrefix, postSlug))
 	if err != nil && err != store.ErrNotFound {
 		return errors.InternalServerError("posts.Save.store-read", "Failed to read post by slug: %v", err.Error())
 	}
@@ -111,136 +104,12 @@ func (p *Posts) Save(ctx context.Context, req *pb.SaveRequest, rsp *pb.SaveRespo
 		err := json.Unmarshal(recordsBySlug[0].Value, otherSlugPost)
 		if oldPost.ID != otherSlugPost.ID {
 			if err != nil {
-				return errors.InternalServerError("posts.Save.slug-unmarshal", "Error unmarshaling other post with same slug: %v", err.Error())
+				return errors.InternalServerError("posts.Save.slug-unmarshal", "Error un-marshalling other post with same slug: %v", err.Error())
 			}
 		}
 		return errors.BadRequest("posts.Save.slug-check", "An other post with this slug already exists")
 	}
 
 	return p.savePost(ctx, oldPost, post)
-
-}
-
-func (p *Posts) savePost(ctx context.Context, oldPost, post *model.Post) error {
-
-	bytes, err := json.Marshal(post)
-	if err != nil {
-		return err
-	}
-
-	// Save post by content ID
-	if err := store.Write(&store.Record{
-		Key:   fmt.Sprintf("%v:%v", idPrefix, post.ID),
-		Value: bytes,
-	}); err != nil {
-		return err
-	}
-
-	// Delete old by slug index if the slug has changed
-	if oldPost != nil && oldPost.Slug != post.Slug {
-		if err := store.Delete(fmt.Sprintf("%v:%v", slugPrefix, oldPost.Slug)); err != nil {
-			return err
-		}
-	}
-
-	// Save post by slug
-	if err := store.Write(&store.Record{
-		Key:   fmt.Sprintf("%v:%v", slugPrefix, post.Slug),
-		Value: bytes,
-	}); err != nil {
-		return err
-	}
-
-	// Save post by timeStamp
-	if err := store.Write(&store.Record{
-		// We revert the timestamp so the order is chronologically reversed
-		Key:   fmt.Sprintf("%v:%v", timeStampPrefix, math.MaxInt64-post.CreateTimestamp),
-		Value: bytes,
-	}); err != nil {
-		return err
-	}
-
-	//this is a new post
-	if oldPost == nil {
-
-		var tagNames []string
-		for _, tagName := range post.Tags {
-			tagNames = append(tagNames, tagName)
-		}
-		if _, err := p.Tags.Add(ctx, &tags.AddRequest{
-			ResourceID: post.ID,
-			Type:       tagType,
-			Titles:     tagNames,
-		}); err != nil {
-			return err
-		}
-
-		// this is all
-		return nil
-	}
-
-	//update tags
-	return p.diffTags(ctx, post.ID, oldPost.Tags, post.Tags)
-
-}
-
-//diffTags to update tags
-func (p *Posts) diffTags(ctx context.Context, resourceID string, oldTagNames, newTagNames []string) error {
-
-	oldTags := map[string]struct{}{}
-	for _, v := range oldTagNames {
-		oldTags[v] = struct{}{}
-	}
-
-	newTags := map[string]struct{}{}
-	for _, v := range newTagNames {
-		newTags[v] = struct{}{}
-	}
-
-	//find removed tags
-	var tags2remove []string
-	for i := range oldTags {
-		_, stillThere := newTags[i]
-		if !stillThere {
-			tags2remove = append(tags2remove, i)
-		}
-	}
-
-	if len(tags2remove) > 0 {
-		_, err := p.Tags.Remove(ctx, &tags.RemoveRequest{
-			ResourceID: resourceID,
-			Type:       tagType,
-			Titles:     tags2remove,
-		})
-		if err != nil {
-			logger.Errorf("Error decreasing count for tag '%v' with type '%v' for Post '%v'", tags2remove, tagType, resourceID)
-		}
-
-	}
-
-	//find added tags
-	var tags2add []string
-	for i := range newTags {
-		_, exist := oldTags[i]
-		if !exist {
-			tags2add = append(tags2add, i)
-		}
-	}
-
-	if len(tags2add) > 0 {
-
-		_, err := p.Tags.Add(ctx, &tags.AddRequest{
-			ResourceID: resourceID,
-			Type:       tagType,
-			Titles:     tags2add,
-		})
-
-		if err != nil {
-			logger.Errorf("Error increasing count for tag '%v' with type '%v' for parent '%v': %v", tags2add, tagType, resourceID, err)
-		}
-
-	}
-
-	return nil
 
 }

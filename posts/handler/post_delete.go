@@ -16,7 +16,7 @@ func (p *Posts) Delete(ctx context.Context, req *pb.DeleteRequest, rsp *pb.Delet
 
 	logger.Info("Received Post.Delete request")
 
-	records, err := store.Read(fmt.Sprintf("%v:%v", idPrefix, req.Id))
+	records, err := store.Read(fmt.Sprintf("%v:%v", model.IDPrefix, req.Id))
 	if err != nil && err != store.ErrNotFound {
 		return err
 	}
@@ -28,15 +28,15 @@ func (p *Posts) Delete(ctx context.Context, req *pb.DeleteRequest, rsp *pb.Delet
 		return err
 	}
 	// Delete by ID
-	if err = store.Delete(fmt.Sprintf("%v:%v", idPrefix, post.ID)); err != nil {
+	if err = store.Delete(fmt.Sprintf("%v:%v", model.IDPrefix, post.ID)); err != nil {
 		return err
 	}
 
 	// Delete by slug
-	if err := store.Delete(fmt.Sprintf("%v:%v", slugPrefix, post.Slug)); err != nil {
+	if err := store.Delete(fmt.Sprintf("%v:%v", model.SlugPrefix, post.Slug)); err != nil {
 		return err
 	}
 
 	// Delete by timeStamp
-	return store.Delete(fmt.Sprintf("%v:%v", timeStampPrefix, post.CreateTimestamp))
+	return store.Delete(fmt.Sprintf("%v:%v", model.TimeStampPrefix, post.CreateTimestamp))
 }
