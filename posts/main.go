@@ -16,8 +16,7 @@ func main() {
 	)
 
 	srv.Handle(&handler.Posts{
-		Tags: tags.NewTagsService("tags", srv.Client()),
-		DB:   model.NewDBService(),
+		DB: model.NewService(tags.NewTagsService("tags", srv.Client())),
 	})
 
 	// Run service

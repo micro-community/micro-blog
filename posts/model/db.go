@@ -7,6 +7,7 @@ import (
 	"math"
 
 	"github.com/micro-community/micro-blog/common/protos/tags"
+	"github.com/micro/micro/v3/service/errors"
 	"github.com/micro/micro/v3/service/logger"
 	"github.com/micro/micro/v3/service/store"
 )
@@ -16,13 +17,57 @@ type DB struct {
 	Tags tags.TagsService
 }
 
-//NewDBService return a db context
-func NewDBService() *DB {
+//NewService return a model context
+func NewService(tagsService tags.TagsService) *DB {
+	return &DB{
+		Tags: tagsService,
+	}
+}
 
+//CheckByPostID from store(db,cache etc.)
+func (p *DB) CheckByPostID(postID string) (*Post, error) {
+	records, err := store.Read(fmt.Sprintf("%v:%v", IDPrefix, postID))
+	if err != nil && err != store.ErrNotFound {
+		return nil, errors.InternalServerError("posts.Save.store-id-read", "Failed to read post by id: %v", err.Error())
+	}
+
+	if len(records) == 0 {
+		return nil, nil
+	}
+
+	// there is some posts with this id, so we update current post
+	record := records[0]
+	oldPost := &Post{}
+	err = json.Unmarshal(record.Value, oldPost)
+	if err != nil {
+		return nil, errors.InternalServerError("posts.save.unmarshal", "Failed to unmarshal old post: %v", err.Error())
+	}
+
+	return oldPost, nil
+}
+
+//CheckBySlug from store(db,cache etc.)
+func (p *DB) CheckBySlug(postSlug, oldPostID string) error {
+	recordsBySlug, err := store.Read(fmt.Sprintf("%v:%v", SlugPrefix, postSlug))
+	if err != nil && err != store.ErrNotFound {
+		return errors.InternalServerError("posts.Save.store-read", "Failed to read post by slug: %v", err.Error())
+	}
+
+	if len(recordsBySlug) > 0 {
+		otherSlugPost := &Post{}
+		err := json.Unmarshal(recordsBySlug[0].Value, otherSlugPost)
+		if oldPostID != otherSlugPost.ID {
+			if err != nil {
+				return errors.InternalServerError("posts.Save.slug-unmarshal", "Error un-marshalling other post with same slug: %v", err.Error())
+			}
+		}
+		return errors.BadRequest("posts.Save.slug-check", "An other post with this slug already exists")
+	}
 	return nil
 }
 
-func (p *DB) savePost(ctx context.Context, oldPost, post *Post) error {
+//SavePost to db
+func (p *DB) SavePost(ctx context.Context, oldPost, post *Post) error {
 
 	bytes, err := json.Marshal(post)
 	if err != nil {
