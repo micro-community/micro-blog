@@ -1,5 +1,7 @@
 package model
 
+import "github.com/micro-community/micro-blog/common/protos/tags"
+
 // Some Const data for post
 const (
 	TagType         = "post-tag"
@@ -17,6 +19,18 @@ const (
 	QueryBySlug
 	QueryByTimestamp
 )
+
+//DB to handle DB
+type DB struct {
+	Tags tags.TagsService
+}
+
+//NewService return a model context
+func NewService(tagsService tags.TagsService) *DB {
+	return &DB{
+		Tags: tagsService,
+	}
+}
 
 //Post for article
 type Post struct {

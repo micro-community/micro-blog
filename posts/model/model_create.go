@@ -11,23 +11,11 @@ import (
 	"github.com/micro/micro/v3/service/store"
 )
 
-//DB to handle DB
-type DB struct {
-	Tags tags.TagsService
-}
-
-//NewService return a model context
-func NewService(tagsService tags.TagsService) *DB {
-	return &DB{
-		Tags: tagsService,
-	}
-}
-
 //CheckByPostID from store(db,cache etc.)
 func (p *DB) CheckByPostID(postID string) (*Post, error) {
 	records, err := store.Read(fmt.Sprintf("%v:%v", IDPrefix, postID))
 	if err != nil && err != store.ErrNotFound {
-		return nil, errors.InternalServerError("posts.Save.store-id-read", "Failed to read post by id: %v", err.Error())
+		return nil, errors.InternalServerError("posts.Save.store-id-read", "Failed to check post by id: %v", err.Error())
 	}
 
 	if len(records) == 0 {

@@ -3,28 +3,34 @@ package model
 import (
 	"context"
 	"fmt"
+	"math"
 
-	"github.com/micro/micro/v3/service/logger"
 	"github.com/micro/micro/v3/service/store"
 )
 
 //DeletePostByID from db
-func (p *DB) DeletePostByID(ctx context.Context, id string) error {
-
+func (p *DB) DeletePostByID(ctx context.Context, postID string) error {
+	// Delete by ID
+	if err := store.Delete(fmt.Sprintf("%v:%v", IDPrefix, postID)); err != nil {
+		return err
+	}
 	return nil
 }
 
 //DeletePostBySlug from db
 func (p *DB) DeletePostBySlug(ctx context.Context, slug string) error {
 
-	key := fmt.Sprintf("%v:%v", SlugPrefix, slug)
-	logger.Infof("Reading post by slug: %v", slug)
-	records, err := store.Read("", store.Prefix(key))
+	if err := store.Delete(fmt.Sprintf("%v:%v", SlugPrefix, slug)); err != nil {
+		return err
+	}
 	return nil
 }
 
 //DeletePostByTimeStamp from db
-func (p *DB) DeletePostByTimeStamp(ctx context.Context, slug string) error {
+func (p *DB) DeletePostByTimeStamp(ctx context.Context, createdtimestamp int64) error {
 
+	if err := store.Delete(fmt.Sprintf("%v:%v", TimeStampPrefix, math.MaxInt64-createdtimestamp)); err != nil {
+		return err
+	}
 	return nil
 }
