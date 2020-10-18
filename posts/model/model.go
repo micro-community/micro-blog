@@ -8,6 +8,16 @@ const (
 	TimeStampPrefix = "timestamp"
 )
 
+// QueryType type
+type QueryType int
+
+// QueryType type
+const (
+	QueryByID QueryType = iota
+	QueryBySlug
+	QueryByTimestamp
+)
+
 //Post for article
 type Post struct {
 	ID              string   `json:"id"`

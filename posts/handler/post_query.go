@@ -2,14 +2,11 @@ package handler
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 
 	"github.com/micro-community/micro-blog/posts/model"
 	pb "github.com/micro-community/micro-blog/posts/proto"
 	"github.com/micro/micro/v3/service/errors"
 	"github.com/micro/micro/v3/service/logger"
-	"github.com/micro/micro/v3/service/store"
 )
 
 // Query the posts
@@ -17,49 +14,34 @@ func (p *Posts) Query(ctx context.Context, req *pb.QueryRequest, rsp *pb.QueryRe
 
 	logger.Info("Received Post.Query request")
 
-	var records []*store.Record
+	if len(req.Id) == 0 {
+		return errors.BadRequest("posts.Query.input-check", "ID is missing")
+	}
+
 	var err error
+	var records []*model.Post
 
 	if len(req.Slug) > 0 { // first to search by slug
-		key := fmt.Sprintf("%v:%v", model.SlugPrefix, req.Slug)
-		logger.Infof("Reading post by slug: %v", req.Slug)
-		records, err = store.Read("", store.Prefix(key))
+		records, err = p.DB.QueryPostBySlug(ctx, req.Slug)
 	} else if len(req.Id) > 0 { //then by id
-		key := fmt.Sprintf("%v:%v", model.IDPrefix, req.Id)
-		logger.Infof("Reading post by id: %v", req.Id)
-		records, err = store.Read("", store.Prefix(key))
+		records, err = p.DB.QueryPostByID(ctx, req.Id)
 	} else { //last by timestamp
-		key := fmt.Sprintf("%v:", model.TimeStampPrefix)
-		var limit uint
-		limit = 20 //default if without limition in req
-		if req.Limit > 0 {
-			limit = uint(req.Limit)
-		}
-		logger.Infof("Listing posts, offset: %v, limit: %v", req.Offset, limit)
-		records, err = store.Read("", store.Prefix(key),
-			store.Offset(uint(req.Offset)),
-			store.Limit(limit))
+		records, err = p.DB.QueryPostByTimeStamp(ctx, req.Limit, req.Offset)
 	}
 
 	if err != nil {
-		return errors.BadRequest("posts.Query.store-read", "Failed to read from store: %v", err.Error())
+		return errors.BadRequest("posts.Query.store-read", "Failed to read from db: %v", err.Error())
 	}
 	// serialize the response list
 	rsp.Posts = make([]*pb.Post, len(records))
 	for i, record := range records {
 
-		//dto proc to handle po to bo
-		postRecord := &model.Post{}
-		if err := json.Unmarshal(record.Value, postRecord); err != nil {
-			return err
-		}
-
 		rsp.Posts[i] = &pb.Post{
-			Id:      postRecord.ID,
-			Title:   postRecord.Title,
-			Slug:    postRecord.Slug,
-			Content: postRecord.Content,
-			Tags:    postRecord.Tags,
+			Id:      record.ID,
+			Title:   record.Title,
+			Slug:    record.Slug,
+			Content: record.Content,
+			Tags:    record.Tags,
 		}
 	}
 	return nil
