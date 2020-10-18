@@ -9,13 +9,13 @@ import (
 	"github.com/micro/micro/v3/service/logger"
 )
 
-// Query the posts
-func (p *Tags) Query(ctx context.Context, req *pb.QueryRequest, rsp *pb.QueryResponse) error {
+// List the tags
+func (p *Tags) List(ctx context.Context, req *pb.ListRequest, rsp *pb.ListResponse) error {
 
-	logger.Info("Received Tag.Query request")
+	logger.Info("Received Tag.List request")
 
 	if len(req.Id) == 0 {
-		return errors.BadRequest("posts.Query.input-check", "ID is missing")
+		return errors.BadRequest("tags.Query.input-check", "ID is missing")
 	}
 
 	var err error
@@ -30,18 +30,15 @@ func (p *Tags) Query(ctx context.Context, req *pb.QueryRequest, rsp *pb.QueryRes
 	}
 
 	if err != nil {
-		return errors.BadRequest("posts.Query.store-read", "Failed to read from db: %v", err.Error())
+		return errors.BadRequest("tags.Query.store-read", "Failed to read from db: %v", err.Error())
 	}
 	// serialize the response list
 	rsp.Tags = make([]*pb.Tag, len(records))
 	for i, record := range records {
 
 		rsp.Tags[i] = &pb.Tag{
-			Id:      record.ID,
-			Title:   record.Title,
-			Slug:    record.Slug,
-			Content: record.Content,
-			Tags:    record.Tags,
+			Title: record.Title,
+			Slug:  record.Slug,
 		}
 	}
 	return nil

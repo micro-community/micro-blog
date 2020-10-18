@@ -15,7 +15,7 @@ proto:
 	
 .PHONY: build
 build:
-	go build -o posts *.go
+	go build -o tags *.go
 
 .PHONY: test
 test:
@@ -23,4 +23,4 @@ test:
 
 .PHONY: docker
 docker:
-	docker build . -t posts:latest
+	docker build . -t tags:latest

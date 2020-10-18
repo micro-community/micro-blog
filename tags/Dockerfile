@@ -1,3 +1,3 @@
 FROM alpine
-ADD posts /tags
+ADD tags /tags
 ENTRYPOINT [ "/tags" ]

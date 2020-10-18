@@ -17,7 +17,7 @@ service Tags {
 
 message Tag {
 	// Type is useful for namespacing and listing across resources,
-	// ie. list tags for posts, customers etc.
+	// ie. list tags for tags, customers etc.
 	string type = 1;
 	string slug = 2;
 	string title = 3;
@@ -26,7 +26,7 @@ message Tag {
 }
 
 message AddRequest {
-	string resourceID = 1;
+	string resourceID = 1; //this is a post id
 	string type = 2;
 	repeated string titles = 3; //can handle bulk 
 	int64 resourceCreated = 4;

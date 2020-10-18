@@ -9,14 +9,13 @@ import (
 	"github.com/micro/micro/v3/service/logger"
 )
 
-// Delete a tag
-func (p *Tags) Delete(ctx context.Context, req *pb.DeleteRequest, rsp *pb.DeleteResponse) error {
+// Remove a tag
+func (p *Tags) Remove(ctx context.Context, req *pb.RemoveRequest, rsp *pb.RemoveResponse) error {
 
 	logger.Info("Received Tag.Delete request")
-	if len(req.Id) == 0 {
-		return errors.BadRequest("posts.Save.input-check", "ID is missing")
+	if len(req.ResourceID) == 0 || len(req.Type) == 0 {
+		return errors.BadRequest("tags.Delete.input-check", "ID or Type is missing")
 	}
-
 	tag, err := p.DB.CheckByTagID(req.Id)
 
 	if err != nil {
@@ -33,10 +32,6 @@ func (p *Tags) Delete(ctx context.Context, req *pb.DeleteRequest, rsp *pb.Delete
 	}
 
 	// Delete by slug
-	if err = p.DB.DeleteTagBySlug(ctx, tag.Slug); err != nil {
-		return err
-	}
+	return p.DB.DeleteTagBySlug(ctx, tag.Slug)
 
-	// Delete by slug
-	return p.DB.DeleteTagByTimeStamp(ctx, tag.CreateTimestamp)
 }

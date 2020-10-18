@@ -11,12 +11,12 @@ import (
 	"github.com/micro/micro/v3/service/logger"
 )
 
-//Add a tag
-func (t *Tags) Add(ctx context.Context, req *pb.AddRequest, rsp *pb.AddResponse) error {
-	logger.Info("Received Tags.Save request")
+//Update a tag
+func (t *Tags) Update(ctx context.Context, req *pb.UpdateRequest, rsp *pb.UpdateResponse) error {
+	logger.Info("Received Tags.Update request")
 
-	if len(req.ResourceID) == 0 || len(req.Type) == 0 {
-		return errors.BadRequest("tags.Add.input-check", "ID or Type is missing")
+	if len(req.Titles) == 0 || len(req.Type) == 0 {
+		return errors.BadRequest("tags.Add.input-check", "Titles or Type is missing")
 	}
 
 	oldTag, err := p.DB.CheckByTagID(req.Titles)

@@ -31,7 +31,7 @@ type Tag struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Type is useful for namespacing and listing across resources,
-	// ie. list tags for posts, customers etc.
+	// ie. list tags for tags, customers etc.
 	Type        string `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
 	Slug        string `protobuf:"bytes,2,opt,name=slug,proto3" json:"slug,omitempty"`
 	Title       string `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
@@ -111,7 +111,7 @@ type AddRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	ResourceID      string   `protobuf:"bytes,1,opt,name=resourceID,proto3" json:"resourceID,omitempty"`
+	ResourceID      string   `protobuf:"bytes,1,opt,name=resourceID,proto3" json:"resourceID,omitempty"` //this is a post id
 	Type            string   `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
 	Titles          []string `protobuf:"bytes,3,rep,name=titles,proto3" json:"titles,omitempty"` //can handle bulk
 	ResourceCreated int64    `protobuf:"varint,4,opt,name=resourceCreated,proto3" json:"resourceCreated,omitempty"`
