@@ -11,11 +11,6 @@ import (
 	"github.com/micro/micro/v3/service/logger"
 )
 
-//Posts Handler of Blog
-type Posts struct {
-	DB *model.DB
-}
-
 //Save a post
 func (p *Posts) Save(ctx context.Context, req *pb.SaveRequest, rsp *pb.SaveResponse) error {
 	logger.Info("Received Posts.Save request")
@@ -40,7 +35,7 @@ func (p *Posts) Save(ctx context.Context, req *pb.SaveRequest, rsp *pb.SaveRespo
 			Slug:            slug.Make(req.Title),
 			CreateTimestamp: time.Now().Unix(),
 		}
-		if err := p.DB.SavePost(ctx, nil, newPost); err != nil {
+		if err := p.DB.CreatePost(ctx, newPost); err != nil {
 			return errors.InternalServerError("posts.save.post-save", "Failed to save new post: %v", err.Error())
 		}
 		return nil
@@ -84,6 +79,7 @@ func (p *Posts) Save(ctx context.Context, req *pb.SaveRequest, rsp *pb.SaveRespo
 	if err := p.DB.CheckBySlug(postSlug, oldPost.ID); err != nil {
 		return err
 	}
-	return p.DB.SavePost(ctx, oldPost, post)
+
+	return p.DB.UpdatePost(ctx, oldPost, post)
 
 }
