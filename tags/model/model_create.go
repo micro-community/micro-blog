@@ -10,9 +10,9 @@ import (
 	"github.com/micro/micro/v3/service/store"
 )
 
-//CheckByTagID from store(db,cache etc.)
-func (p *DB) CheckByTagID(tagID string) (*Tag, error) {
-	records, err := store.Read(fmt.Sprintf("%v:%v", idPrefix, tagID))
+//CheckByResourceID from store(db,cache etc.)
+func (p *DB) CheckByResourceID(resourceID string) (*Tag, error) {
+	records, err := store.Read(fmt.Sprintf("%v:%v", idPrefix, resourceID))
 	if err != nil && err != store.ErrNotFound {
 		return nil, errors.InternalServerError("tags.Save.store-id-read", "Failed to check tag by id: %v", err.Error())
 	}
@@ -22,9 +22,8 @@ func (p *DB) CheckByTagID(tagID string) (*Tag, error) {
 	}
 
 	// there is some tags with this id, so we update current tag
-	record := records[0]
 	oldTag := &Tag{}
-	err = json.Unmarshal(record.Value, oldTag)
+	err = json.Unmarshal(records[0].Value, oldTag)
 	if err != nil {
 		return nil, errors.InternalServerError("tags.save.unmarshal", "Failed to unmarshal old tag: %v", err.Error())
 	}
@@ -33,23 +32,24 @@ func (p *DB) CheckByTagID(tagID string) (*Tag, error) {
 }
 
 //CheckBySlug from store(db,cache etc.)
-func (p *DB) CheckBySlug(tagSlug, oldTagID string) error {
+func (p *DB) CheckBySlug(tagSlug string) (*Tag, error) {
+
 	recordsBySlug, err := store.Read(fmt.Sprintf("%v:%v", slugPrefix, tagSlug))
 	if err != nil && err != store.ErrNotFound {
-		return errors.InternalServerError("tags.Save.store-read", "Failed to read tag by slug: %v", err.Error())
+		return nil, errors.InternalServerError("tags.Save.store-read", "Failed to read tag by slug: %v", err.Error())
 	}
 
-	if len(recordsBySlug) > 0 {
-		otherSlugTag := &Tag{}
-		err := json.Unmarshal(recordsBySlug[0].Value, otherSlugTag)
-		if oldTagID != otherSlugTag.ID {
-			if err != nil {
-				return errors.InternalServerError("tags.Save.slug-unmarshal", "Error un-marshalling other tag with same slug: %v", err.Error())
-			}
-		}
-		return errors.BadRequest("tags.Save.slug-check", "An other tag with this slug already exists")
+	if len(recordsBySlug) == 0 {
+		return nil, nil
 	}
-	return nil
+	retrivedTag := &Tag{}
+	if len(recordsBySlug) > 0 {
+		if err := json.Unmarshal(recordsBySlug[0].Value, retrivedTag); err != nil {
+			return nil, errors.InternalServerError("tags.Save.slug-unmarshal", "Error un-marshalling other tag with same slug: %v", err.Error())
+		}
+		return nil, errors.BadRequest("tags.Save.slug-check", "An other tag with this slug already exists")
+	}
+	return retrivedTag, nil
 }
 
 //CreateTag to db

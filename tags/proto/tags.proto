@@ -32,7 +32,9 @@ message AddRequest {
 	int64 resourceCreated = 4;
 }
 
-message AddResponse{}
+message AddResponse{
+	repeated bool results = 2;
+}
 
 message RemoveRequest {
 	string resourceID = 1;
@@ -40,7 +42,9 @@ message RemoveRequest {
 	repeated string titles = 3; //can handle bulk 
 }
 
-message RemoveResponse{}
+message RemoveResponse{
+	repeated bool results = 2;
+}
 
 message UpdateRequest {
 	string type = 1;
@@ -48,7 +52,9 @@ message UpdateRequest {
 	string description = 3;
 }
 
-message UpdateResponse{}
+message UpdateResponse{
+	repeated bool results = 2;
+}
 
 // ListRequest: list either by resource id or type.
 // Optionally filter by min or max count.
