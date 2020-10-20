@@ -55,42 +55,13 @@ func (p *DB) CheckBySlug(tagSlug string) (*Tag, error) {
 //CreateTag to db
 func (p *DB) CreateTag(ctx context.Context, tag *Tag) error {
 
-	bytes, err := json.Marshal(tag)
-	if err != nil {
-		return err
-	}
-
-	// // Save tag by content ID
-	// if err := store.Write(&store.Record{
-	// 	Key:   fmt.Sprintf("%v:%v", idPrefix, tag.ResourceID),
-	// 	Value: bytes,
-	// }); err != nil {
-	// 	return err
-	// }
-
-	// Save tag by slug
-	if err := store.Write(&store.Record{
-		Key:   fmt.Sprintf("%v:%v", slugPrefix, tag.Slug),
-		Value: bytes,
-	}); err != nil {
-		return err
-	}
-
-	err = store.Write(&store.Record{
-		Key:   fmt.Sprintf("%v:%v:%v", tagCountPrefix, tag.Type, tag.Slug),
-		Value: bytes,
-	})
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return p.saveTag(tag)
 }
 
-//IncresePostTagCount increase :1 ,tags count for post ,2,total tags count
-func (p *DB) IncresePostTagCount(resourceID string, tag *Tag) error {
+//IncreseTagCount increase  a tag count basing on all post with same tag
+func (p *DB) IncreseTagCount(resourceID string, tag *Tag) error {
 
-	//tagCountPrefix:tagslug:resourceID
+	//tagCountPrefix:tagslug:resourceID ,add resource in some slug
 	if err := store.Write(&store.Record{
 		Key:   fmt.Sprintf("%v:%v%v", tagCountPrefix, tag.Slug, resourceID),
 		Value: nil,
@@ -105,5 +76,21 @@ func (p *DB) IncresePostTagCount(resourceID string, tag *Tag) error {
 	}
 
 	tag.Count = int64(len(recs))
+
+	if tag.Count == oldTagCount {
+		return fmt.Errorf("Tag count for tag %v is unchanged, was: %v, now: %v", tag.Slug, oldTagCount, tag.Count)
+	}
+	tagJSON, err := json.Marshal(tag)
+	if err != nil {
+		return err
+	}
+	err = store.Write(&store.Record{
+		Key:   fmt.Sprintf("%v:%v:%v", resourcePrefix, resourceID, tag.Slug),
+		Value: tagJSON,
+	})
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

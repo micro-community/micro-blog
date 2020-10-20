@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math"
 
 	"github.com/micro/micro/v3/service/store"
 )
@@ -12,43 +11,30 @@ import (
 //UpdateTag to db
 func (p *DB) UpdateTag(ctx context.Context, oldTag, tag *Tag) error {
 
+	return p.saveTag(tag)
+
+}
+
+func (p *DB) saveTag(tag *Tag) error {
+
+	key := fmt.Sprintf("%v:%v", slugPrefix, tag.Slug)
+	typeKey := fmt.Sprintf("%v:%v:%v", typePrefix, tag.Type, tag.Slug)
+
 	bytes, err := json.Marshal(tag)
 	if err != nil {
 		return err
 	}
 
-	// // Save tag by content ID
-	// if err := store.Write(&store.Record{
-	// 	Key:   fmt.Sprintf("%v:%v", idPrefix, tag.ResourceID),
-	// 	Value: bytes,
-	// }); err != nil {
-	// 	return err
-	// }
-
-	// Delete old by slug index if the slug has changed
-	if oldTag != nil && oldTag.Slug != tag.Slug {
-		if err := store.Delete(fmt.Sprintf("%v:%v", slugPrefix, oldTag.Slug)); err != nil {
-			return err
-		}
-	}
-
-	// Save tag by slug
-	if err := store.Write(&store.Record{
-		Key:   fmt.Sprintf("%v:%v", slugPrefix, tag.Slug),
+	// write resourceId:slug to enable prefix listing based on type
+	err = store.Write(&store.Record{
+		Key:   key,
 		Value: bytes,
-	}); err != nil {
+	})
+	if err != nil {
 		return err
 	}
-
-	// Save tag by timeStamp
-	if err := store.Write(&store.Record{
-		// We revert the timestamp so the order is chronologically reversed
-		Key:   fmt.Sprintf("%v:%v", timeStampPrefix, math.MaxInt64-tag.CreateTimestamp),
+	return store.Write(&store.Record{
+		Key:   typeKey,
 		Value: bytes,
-	}); err != nil {
-		return err
-	}
-
-	//update tags
-	return nil
+	})
 }

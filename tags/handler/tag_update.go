@@ -21,12 +21,15 @@ func (t *Tags) Update(ctx context.Context, req *pb.UpdateRequest, rsp *pb.Update
 
 	for _, title := range req.Titles {
 
-		oldTag, err := t.DB.CheckBySlug(title)
+		tagSlug := slug.Make(title)
+		oldTag, err := t.DB.CheckBySlug(tagSlug)
 		if err != nil {
 			return err
 		}
 		//find no old tag
 		if oldTag == nil {
+			rsp.Results = append(rsp.Results, false)
+			//return fmt.Errorf("Tag with slug '%v' not found, nothing to update", tagSlug)
 			continue
 		}
 
@@ -34,37 +37,15 @@ func (t *Tags) Update(ctx context.Context, req *pb.UpdateRequest, rsp *pb.Update
 		newTag := &model.Tag{
 			Type:            req.Type,
 			Title:           title,
+			Count:           oldTag.Count,
 			Slug:            slug.Make(title),
 			CreateTimestamp: time.Now().Unix(),
 		}
-		if err := t.DB.CreateTag(ctx, newTag); err != nil {
-			return errors.InternalServerError("tags.save.tag-save", "Failed to save new tag: %v", err.Error())
+		if err := t.DB.UpdateTag(ctx, oldTag, newTag); err != nil {
+			rsp.Results = append(rsp.Results, false)
+			//return errors.InternalServerError("tags.Update.UpdateTag", "Failed to Update new tag: %v", err.Error())
 		}
-
-		//new tag content from old
-		tag := &model.Tag{
-			ID:              req.ResourceID,
-			Title:           oldTag.Title,
-			Slug:            oldTag.Slug,
-			CreateTimestamp: oldTag.CreateTimestamp,
-			UpdateTimestamp: time.Now().Unix(),
-		}
-
-		//update article content
-
-		if len(req.Slug) > 0 {
-			tag.Slug = req.Slug
-		}
-
-		// Check if slug exists
-		tagSlug := slug.Make(req.Titles)
-
-		if err := t.DB.CheckBySlug(tagSlug, oldTag.ID); err != nil {
-			return err
-		}
-
-		return t.DB.UpdateTag(ctx, oldTag, tag)
-
+		rsp.Results = append(rsp.Results, true)
 	}
-
+	return nil
 }

@@ -13,14 +13,15 @@ import (
 
 //Add a tag for a post
 func (t *Tags) Add(ctx context.Context, req *pb.AddRequest, rsp *pb.AddResponse) error {
-	logger.Info("Received Tags.Save request")
+	logger.Info("Received Tags.Add request")
 
 	if len(req.ResourceID) == 0 || len(req.Type) == 0 {
 		return errors.BadRequest("tags.Add.input-check", "ID or Type is missing")
 	}
-
 	for _, title := range req.Titles {
-		existTag, err := t.DB.CheckBySlug(title)
+
+		tagSlug := slug.Make(title)
+		existTag, err := t.DB.CheckBySlug(tagSlug)
 
 		if err != nil {
 			rsp.Results = append(rsp.Results, false)
@@ -45,7 +46,7 @@ func (t *Tags) Add(ctx context.Context, req *pb.AddRequest, rsp *pb.AddResponse)
 
 		}
 		rsp.Results = append(rsp.Results, true)
-		t.DB.IncresePostTagCount(tag)
+		t.DB.IncreseTagCount(req.ResourceID, tag)
 	}
 
 	return nil
