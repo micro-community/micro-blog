@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/gosimple/slug"
 	pb "github.com/micro-community/micro-blog/tags/proto"
 	"github.com/micro/micro/v3/service/errors"
 	"github.com/micro/micro/v3/service/logger"
@@ -16,14 +17,19 @@ func (p *Tags) Remove(ctx context.Context, req *pb.RemoveRequest, rsp *pb.Remove
 	if len(req.ResourceID) == 0 || len(req.Type) == 0 {
 		return errors.BadRequest("tags.Delete.input-check", "ID or Type is missing")
 	}
-	tag, err := p.DB.CheckByTagID(req.Id)
 
-	if err != nil {
-		return err
-	}
+	for _, title := range req.GetTitles() {
 
-	if tag == nil {
-		return fmt.Errorf("Tag with ID %v not found", req.Id)
+		tag, err := p.DB.CheckBySlug(slug.Make(title))
+
+		if err != nil {
+			return err
+		}
+
+		if tag == nil {
+			return fmt.Errorf("Tag with ID %v not found", req.Id)
+		}
+
 	}
 
 	// Delete by ID

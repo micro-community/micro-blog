@@ -2,13 +2,14 @@ package model
 
 // Some Const data for tag
 const (
-	idPrefix        = "id"
-	timeStampPrefix = "timestamp"
-	slugPrefix      = "bySlug"
-	resourcePrefix  = "byResource"
-	typePrefix      = "byType"
-	tagCountPrefix  = "tagCount"
-	childrenByTag   = "childrenByTag"
+	idPrefix            = "id"
+	timeStampPrefix     = "timestamp"
+	slugPrefix          = "bySlug"
+	resourcePrefix      = "byResource"
+	typePrefix          = "byType"
+	tagCountPrefix      = "tagCount"
+	childrenByTag       = "childrenByTag"
+	tagTotalCountPrefix = "tagTotalCount"
 )
 
 //DB to handle DB

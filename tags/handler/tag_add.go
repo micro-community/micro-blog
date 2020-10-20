@@ -11,7 +11,7 @@ import (
 	"github.com/micro/micro/v3/service/logger"
 )
 
-//Add a tag
+//Add a tag for a post
 func (t *Tags) Add(ctx context.Context, req *pb.AddRequest, rsp *pb.AddResponse) error {
 	logger.Info("Received Tags.Save request")
 
@@ -20,31 +20,32 @@ func (t *Tags) Add(ctx context.Context, req *pb.AddRequest, rsp *pb.AddResponse)
 	}
 
 	for _, title := range req.Titles {
-
 		existTag, err := t.DB.CheckBySlug(title)
 
 		if err != nil {
 			rsp.Results = append(rsp.Results, false)
 			return err
 		}
-		//already exist
-		if existTag != nil {
-			rsp.Results = append(rsp.Results, true)
-			continue
+		tag := existTag
+		//no exist
+		if tag == nil {
+			//find no old tag
+			tag = &model.Tag{
+				Title:           title,
+				Type:            req.Type,
+				Slug:            slug.Make(title),
+				CreateTimestamp: time.Now().Unix(),
+			}
 		}
-		//find no old tag
-		newTag := &model.Tag{
-			Title:           title,
-			Slug:            slug.Make(title),
-			CreateTimestamp: time.Now().Unix(),
-		}
-		if err := t.DB.CreateTag(ctx, newTag); err != nil {
+
+		//Create tag for a post
+		if err := t.DB.CreateTag(ctx, tag); err != nil {
 			rsp.Results = append(rsp.Results, false)
-			return errors.InternalServerError("tags.save.tag-save", "Failed to save new tag: %v", err.Error())
+			return errors.InternalServerError("tags.Add.tag-create", "Failed to create new tag: %v", err.Error())
 
 		}
 		rsp.Results = append(rsp.Results, true)
-
+		t.DB.IncresePostTagCount(tag)
 	}
 
 	return nil

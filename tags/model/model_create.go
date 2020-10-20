@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math"
 
 	"github.com/micro/micro/v3/service/errors"
 	"github.com/micro/micro/v3/service/store"
@@ -39,6 +38,7 @@ func (p *DB) CheckBySlug(tagSlug string) (*Tag, error) {
 		return nil, errors.InternalServerError("tags.Save.store-read", "Failed to read tag by slug: %v", err.Error())
 	}
 
+	//this is a new tag
 	if len(recordsBySlug) == 0 {
 		return nil, nil
 	}
@@ -60,13 +60,13 @@ func (p *DB) CreateTag(ctx context.Context, tag *Tag) error {
 		return err
 	}
 
-	// Save tag by content ID
-	if err := store.Write(&store.Record{
-		Key:   fmt.Sprintf("%v:%v", idPrefix, tag.ID),
-		Value: bytes,
-	}); err != nil {
-		return err
-	}
+	// // Save tag by content ID
+	// if err := store.Write(&store.Record{
+	// 	Key:   fmt.Sprintf("%v:%v", idPrefix, tag.ResourceID),
+	// 	Value: bytes,
+	// }); err != nil {
+	// 	return err
+	// }
 
 	// Save tag by slug
 	if err := store.Write(&store.Record{
@@ -76,38 +76,34 @@ func (p *DB) CreateTag(ctx context.Context, tag *Tag) error {
 		return err
 	}
 
-	// Save tag by timeStamp
-	if err := store.Write(&store.Record{
-		// We revert the timestamp so the order is chronologically reversed
-		Key:   fmt.Sprintf("%v:%v", timeStampPrefix, math.MaxInt64-tag.CreateTimestamp),
+	err = store.Write(&store.Record{
+		Key:   fmt.Sprintf("%v:%v:%v", tagCountPrefix, tag.Type, tag.Slug),
 		Value: bytes,
-	}); err != nil {
+	})
+	if err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (p *DB) saveTag(tag *Tag) error {
+//IncresePostTagCount increase :1 ,tags count for post ,2,total tags count
+func (p *DB) IncresePostTagCount(resourceID string, tag *Tag) error {
 
-	key := fmt.Sprintf("%v:%v", slugPrefix, tag.Slug)
-	typeKey := fmt.Sprintf("%v:%v:%v", typePrefix, tag.Type, tag.Slug)
-
-	bytes, err := json.Marshal(tag)
+	//tagCountPrefix:tagslug:resourceID
+	if err := store.Write(&store.Record{
+		Key:   fmt.Sprintf("%v:%v%v", tagCountPrefix, tag.Slug, resourceID),
+		Value: nil,
+	}); err != nil {
+		return err
+	}
+	oldTagCount := tag.Count
+	// get tag count
+	recs, err := store.List(store.Prefix(fmt.Sprintf("%v:%v", tagCountPrefix, tag.Slug)), store.Limit(1000))
 	if err != nil {
 		return err
 	}
 
-	// write resourceId:slug to enable prefix listing based on type
-	err = store.Write(&store.Record{
-		Key:   key,
-		Value: bytes,
-	})
-	if err != nil {
-		return err
-	}
-	return store.Write(&store.Record{
-		Key:   typeKey,
-		Value: bytes,
-	})
+	tag.Count = int64(len(recs))
+	return nil
 }

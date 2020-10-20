@@ -17,13 +17,13 @@ func (p *DB) UpdateTag(ctx context.Context, oldTag, tag *Tag) error {
 		return err
 	}
 
-	// Save tag by content ID
-	if err := store.Write(&store.Record{
-		Key:   fmt.Sprintf("%v:%v", idPrefix, tag.ID),
-		Value: bytes,
-	}); err != nil {
-		return err
-	}
+	// // Save tag by content ID
+	// if err := store.Write(&store.Record{
+	// 	Key:   fmt.Sprintf("%v:%v", idPrefix, tag.ResourceID),
+	// 	Value: bytes,
+	// }); err != nil {
+	// 	return err
+	// }
 
 	// Delete old by slug index if the slug has changed
 	if oldTag != nil && oldTag.Slug != tag.Slug {
