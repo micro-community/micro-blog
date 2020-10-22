@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/gosimple/slug"
 	pb "github.com/micro-community/micro-blog/tags/proto"
@@ -21,23 +20,22 @@ func (p *Tags) Remove(ctx context.Context, req *pb.RemoveRequest, rsp *pb.Remove
 	for _, title := range req.GetTitles() {
 
 		tag, err := p.DB.CheckBySlug(slug.Make(title))
-
 		if err != nil {
+			rsp.Results = append(rsp.Results, false)
 			return err
 		}
-
 		if tag == nil {
-			return fmt.Errorf("Tag with ID %v not found", req.Id)
+			rsp.Results = append(rsp.Results, true)
+			//return fmt.Errorf("Tag with ID %v not found", req.Id)
 		}
-
+		// Delete by ID
+		if err = p.DB.DeleteTagByResourceID(ctx, req.GetResourceID(), tag); err != nil {
+			rsp.Results = append(rsp.Results, false)
+			return err
+		}
+		rsp.Results = append(rsp.Results, true)
 	}
 
-	// Delete by ID
-	if err = p.DB.DeleteTagByID(ctx, tag.ID); err != nil {
-		return err
-	}
-
-	// Delete by slug
-	return p.DB.DeleteTagBySlug(ctx, tag.Slug)
+	return nil
 
 }
