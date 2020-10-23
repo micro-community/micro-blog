@@ -10,7 +10,7 @@ import (
 
 //Comments of blog post
 type Comments struct {
-	DB *model.DB
+	Repository *model.Comment
 }
 
 //Options for handler

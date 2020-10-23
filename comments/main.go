@@ -1,10 +1,10 @@
 package main
 
 import (
+	"github.com/micro-community/micro-blog/comments/handler"
+	"github.com/micro-community/micro-blog/comments/model"
 	"github.com/micro/micro/v3/service"
 	"github.com/micro/micro/v3/service/logger"
-	"github.com/micro/services/blog/comments/model"
-	"github.com/micro/services/blog/comments/handler"
 )
 
 func main() {
@@ -16,7 +16,7 @@ func main() {
 
 	// Register Handler
 	srv.Handle(&handler.Comments{
-		DB: new(model.DB)
+		Repository: model.NewComment(),
 	})
 
 	// Run service
