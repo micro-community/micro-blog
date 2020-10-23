@@ -13,7 +13,7 @@ import (
 //QueryTagByID from db
 func (p *DB) QueryTagByID(ctx context.Context, id string) ([]*Tag, error) {
 
-	key := fmt.Sprintf("%v:%v", slugPrefix, id)
+	key := fmt.Sprintf("%v:%v", resourcePrefix, id)
 	logger.Infof("Reading tag by id: %v", id)
 	records, err := store.Read("", store.Prefix(key))
 
@@ -34,6 +34,21 @@ func (p *DB) QueryTagBySlug(ctx context.Context, slug string) ([]*Tag, error) {
 
 	if err != nil {
 		return nil, errors.BadRequest("tags.Query.store-read", "Failed to read from db: %v", err.Error())
+	}
+	// serialize the response list
+	tags := buildTagsFromRecords(records)
+	return tags, nil
+}
+
+// QueryTagsByType query type
+func (p *DB) QueryTagsByType(ctx context.Context, types string) ([]*Tag, error) {
+
+	key := fmt.Sprintf("%v:%v", typePrefix, types)
+	logger.Infof("Reading tag by slug: %v", types)
+	records, err := store.Read("", store.Prefix(key))
+
+	if err != nil {
+		return nil, errors.BadRequest("tags.Query.QueryTagByType", "Failed to read from db: %v", err.Error())
 	}
 	// serialize the response list
 	tags := buildTagsFromRecords(records)
