@@ -8,7 +8,7 @@ import (
 
 //Posts Handler of Blog
 type Posts struct {
-	DB *model.DB
+	Repository *model.Repository
 }
 
 //Options for handler

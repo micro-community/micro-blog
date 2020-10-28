@@ -12,7 +12,7 @@ import (
 )
 
 //CheckByPostID from store(db,cache etc.)
-func (p *DB) CheckByPostID(postID string) (*Post, error) {
+func (r *Repository) CheckByPostID(postID string) (*Post, error) {
 	records, err := store.Read(fmt.Sprintf("%v:%v", IDPrefix, postID))
 	if err != nil && err != store.ErrNotFound {
 		return nil, errors.InternalServerError("posts.Save.store-id-read", "Failed to check post by id: %v", err.Error())
@@ -34,7 +34,7 @@ func (p *DB) CheckByPostID(postID string) (*Post, error) {
 }
 
 //CheckBySlug from store(db,cache etc.)
-func (p *DB) CheckBySlug(postSlug, oldPostID string) error {
+func (r *Repository) CheckBySlug(postSlug, oldPostID string) error {
 	recordsBySlug, err := store.Read(fmt.Sprintf("%v:%v", SlugPrefix, postSlug))
 	if err != nil && err != store.ErrNotFound {
 		return errors.InternalServerError("posts.Save.store-read", "Failed to read post by slug: %v", err.Error())
@@ -54,7 +54,7 @@ func (p *DB) CheckBySlug(postSlug, oldPostID string) error {
 }
 
 //CreatePost to db
-func (p *DB) CreatePost(ctx context.Context, post *Post) error {
+func (r *Repository) CreatePost(ctx context.Context, post *Post) error {
 
 	bytes, err := json.Marshal(post)
 	if err != nil {
@@ -80,7 +80,7 @@ func (p *DB) CreatePost(ctx context.Context, post *Post) error {
 	// Save post by timeStamp
 	if err := store.Write(&store.Record{
 		// We revert the timestamp so the order is chronologically reversed
-		Key:   fmt.Sprintf("%v:%v", TimeStampPrefix, math.MaxInt64-post.CreateTimestamp),
+		Key:   fmt.Sprintf("%v:%v", TimeStampPrefix, math.MaxInt64-post.Created),
 		Value: bytes,
 	}); err != nil {
 		return err
@@ -91,7 +91,7 @@ func (p *DB) CreatePost(ctx context.Context, post *Post) error {
 	for _, tagName := range post.Tags {
 		tagNames = append(tagNames, tagName)
 	}
-	if _, err := p.Tags.Add(ctx, &tags.AddRequest{
+	if _, err := r.Tags.Add(ctx, &tags.AddRequest{
 		ResourceID: post.ID,
 		Type:       TagType,
 		Titles:     tagNames,

@@ -11,7 +11,7 @@ import (
 )
 
 //QueryPostByID from db
-func (p *DB) QueryPostByID(ctx context.Context, id string) ([]*Post, error) {
+func (p *Repository) QueryPostByID(ctx context.Context, id string) ([]*Post, error) {
 
 	key := fmt.Sprintf("%v:%v", SlugPrefix, id)
 	logger.Infof("Reading post by id: %v", id)
@@ -26,7 +26,7 @@ func (p *DB) QueryPostByID(ctx context.Context, id string) ([]*Post, error) {
 }
 
 //QueryPostBySlug from db
-func (p *DB) QueryPostBySlug(ctx context.Context, slug string) ([]*Post, error) {
+func (p *Repository) QueryPostBySlug(ctx context.Context, slug string) ([]*Post, error) {
 
 	key := fmt.Sprintf("%v:%v", SlugPrefix, slug)
 	logger.Infof("Reading post by slug: %v", slug)
@@ -41,7 +41,7 @@ func (p *DB) QueryPostBySlug(ctx context.Context, slug string) ([]*Post, error) 
 }
 
 //QueryPostByTimeStamp from db
-func (p *DB) QueryPostByTimeStamp(ctx context.Context, qLimit, qOffset int64) ([]*Post, error) {
+func (p *Repository) QueryPostByTimeStamp(ctx context.Context, qLimit, qOffset int64) ([]*Post, error) {
 
 	key := fmt.Sprintf("%v:", TimeStampPrefix)
 	var limit uint

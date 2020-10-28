@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/micro-community/micro-blog/common/protos/tags"
 	"github.com/micro-community/micro-blog/posts/handler"
 	"github.com/micro-community/micro-blog/posts/model"
 	"github.com/micro/micro/v3/service"
@@ -16,7 +15,7 @@ func main() {
 	)
 
 	srv.Handle(&handler.Posts{
-		DB: model.NewService(tags.NewTagsService("tags", srv.Client())),
+		Repository: model.NewService(srv.Client()),
 	})
 
 	// Run service

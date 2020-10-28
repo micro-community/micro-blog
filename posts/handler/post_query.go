@@ -22,11 +22,11 @@ func (p *Posts) Query(ctx context.Context, req *pb.QueryRequest, rsp *pb.QueryRe
 	var records []*model.Post
 
 	if len(req.Slug) > 0 { // first to search by slug
-		records, err = p.DB.QueryPostBySlug(ctx, req.Slug)
+		records, err = p.Repository.QueryPostBySlug(ctx, req.Slug)
 	} else if len(req.Id) > 0 { //then by id
-		records, err = p.DB.QueryPostByID(ctx, req.Id)
+		records, err = p.Repository.QueryPostByID(ctx, req.Id)
 	} else { //last by timestamp
-		records, err = p.DB.QueryPostByTimeStamp(ctx, req.Limit, req.Offset)
+		records, err = p.Repository.QueryPostByTimeStamp(ctx, req.Limit, req.Offset)
 	}
 
 	if err != nil {

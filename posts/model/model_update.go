@@ -12,7 +12,7 @@ import (
 )
 
 //UpdatePost to db
-func (p *DB) UpdatePost(ctx context.Context, oldPost, post *Post) error {
+func (p *Repository) UpdatePost(ctx context.Context, oldPost, post *Post) error {
 
 	bytes, err := json.Marshal(post)
 	if err != nil {
@@ -45,7 +45,7 @@ func (p *DB) UpdatePost(ctx context.Context, oldPost, post *Post) error {
 	// Save post by timeStamp
 	if err := store.Write(&store.Record{
 		// We revert the timestamp so the order is chronologically reversed
-		Key:   fmt.Sprintf("%v:%v", TimeStampPrefix, math.MaxInt64-post.CreateTimestamp),
+		Key:   fmt.Sprintf("%v:%v", TimeStampPrefix, math.MaxInt64-post.Created),
 		Value: bytes,
 	}); err != nil {
 		return err
@@ -56,7 +56,7 @@ func (p *DB) UpdatePost(ctx context.Context, oldPost, post *Post) error {
 }
 
 //diffTags to update tags
-func (p *DB) diffTags(ctx context.Context, resourceID string, oldTagNames, newTagNames []string) error {
+func (p *Repository) diffTags(ctx context.Context, resourceID string, oldTagNames, newTagNames []string) error {
 
 	oldTags := map[string]struct{}{}
 	for _, v := range oldTagNames {

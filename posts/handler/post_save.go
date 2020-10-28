@@ -19,7 +19,7 @@ func (p *Posts) Save(ctx context.Context, req *pb.SaveRequest, rsp *pb.SaveRespo
 		return errors.BadRequest("posts.Save.input-check", "ID is missing")
 	}
 
-	oldPost, err := p.DB.CheckByPostID(req.Id)
+	oldPost, err := p.Repository.CheckByPostID(req.Id)
 
 	if err != nil {
 		return err
@@ -28,14 +28,14 @@ func (p *Posts) Save(ctx context.Context, req *pb.SaveRequest, rsp *pb.SaveRespo
 	//find no old post
 	if oldPost == nil {
 		newPost := &model.Post{
-			ID:              req.Id,
-			Title:           req.Title,
-			Content:         req.Content,
-			Tags:            req.Tags,
-			Slug:            slug.Make(req.Title),
-			CreateTimestamp: time.Now().Unix(),
+			ID:      req.Id,
+			Title:   req.Title,
+			Content: req.Content,
+			Tags:    req.Tags,
+			Slug:    slug.Make(req.Title),
+			Created: time.Now().Unix(),
 		}
-		if err := p.DB.CreatePost(ctx, newPost); err != nil {
+		if err := p.Repository.CreatePost(ctx, newPost); err != nil {
 			return errors.InternalServerError("posts.save.post-save", "Failed to save new post: %v", err.Error())
 		}
 		return nil
@@ -44,13 +44,13 @@ func (p *Posts) Save(ctx context.Context, req *pb.SaveRequest, rsp *pb.SaveRespo
 
 	//new post content from old
 	post := &model.Post{
-		ID:              req.Id,
-		Title:           oldPost.Title,
-		Content:         oldPost.Content,
-		Slug:            oldPost.Slug,
-		Tags:            oldPost.Tags,
-		CreateTimestamp: oldPost.CreateTimestamp,
-		UpdateTimestamp: time.Now().Unix(),
+		ID:      req.Id,
+		Title:   oldPost.Title,
+		Content: oldPost.Content,
+		Slug:    oldPost.Slug,
+		Tags:    oldPost.Tags,
+		Created: oldPost.Created,
+		Updated: time.Now().Unix(),
 	}
 
 	//update article content
@@ -76,10 +76,10 @@ func (p *Posts) Save(ctx context.Context, req *pb.SaveRequest, rsp *pb.SaveRespo
 	// Check if slug exists
 	postSlug := slug.Make(req.Title)
 
-	if err := p.DB.CheckBySlug(postSlug, oldPost.ID); err != nil {
+	if err := p.Repository.CheckBySlug(postSlug, oldPost.ID); err != nil {
 		return err
 	}
 
-	return p.DB.UpdatePost(ctx, oldPost, post)
+	return p.Repository.UpdatePost(ctx, oldPost, post)
 
 }

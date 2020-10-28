@@ -17,7 +17,7 @@ func (p *Posts) Delete(ctx context.Context, req *pb.DeleteRequest, rsp *pb.Delet
 		return errors.BadRequest("posts.Save.input-check", "ID is missing")
 	}
 
-	post, err := p.DB.CheckByPostID(req.Id)
+	post, err := p.Repository.CheckByPostID(req.Id)
 
 	if err != nil {
 		return err
@@ -28,15 +28,15 @@ func (p *Posts) Delete(ctx context.Context, req *pb.DeleteRequest, rsp *pb.Delet
 	}
 
 	// Delete by ID
-	if err = p.DB.DeletePostByID(ctx, post.ID); err != nil {
+	if err = p.Repository.DeletePostByID(ctx, post.ID); err != nil {
 		return err
 	}
 
 	// Delete by slug
-	if err = p.DB.DeletePostBySlug(ctx, post.Slug); err != nil {
+	if err = p.Repository.DeletePostBySlug(ctx, post.Slug); err != nil {
 		return err
 	}
 
 	// Delete by slug
-	return p.DB.DeletePostByTimeStamp(ctx, post.CreateTimestamp)
+	return p.Repository.DeletePostByTimeStamp(ctx, post.Created)
 }
