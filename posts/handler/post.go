@@ -4,11 +4,19 @@ import (
 	"context"
 
 	"github.com/micro-community/micro-blog/posts/model"
+	"github.com/micro/micro/v3/service/client"
 )
 
 //Posts Handler of Blog
 type Posts struct {
 	Repository *model.Repository
+}
+
+//NewPost return *Post
+func NewPost(cli client.Client, opts ...Option) *Posts {
+	return &Posts{
+		Repository: model.NewService(cli),
+	}
 }
 
 //Options for handler

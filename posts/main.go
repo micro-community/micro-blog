@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/micro-community/micro-blog/posts/handler"
-	"github.com/micro-community/micro-blog/posts/model"
 	"github.com/micro/micro/v3/service"
 	"github.com/micro/micro/v3/service/logger"
 )
@@ -14,9 +13,7 @@ func main() {
 		service.Version("latest"),
 	)
 
-	srv.Handle(&handler.Posts{
-		Repository: model.NewService(srv.Client()),
-	})
+	srv.Handle(handler.NewPost(srv.Client()))
 
 	// Run service
 	if err := srv.Run(); err != nil {

@@ -15,7 +15,7 @@ import (
 func (r *Repository) CheckByPostID(postID string) (*Post, error) {
 	records, err := store.Read(fmt.Sprintf("%v:%v", IDPrefix, postID))
 	if err != nil && err != store.ErrNotFound {
-		return nil, errors.InternalServerError("posts.Save.store-id-read", "Failed to check post by id: %v", err.Error())
+		return nil, errors.InternalServerError("CheckByPostID.store-id-read", "Failed to check post by id: %v", err.Error())
 	}
 
 	if len(records) == 0 {
@@ -27,7 +27,7 @@ func (r *Repository) CheckByPostID(postID string) (*Post, error) {
 	oldPost := &Post{}
 	err = json.Unmarshal(record.Value, oldPost)
 	if err != nil {
-		return nil, errors.InternalServerError("posts.save.unmarshal", "Failed to unmarshal old post: %v", err.Error())
+		return nil, errors.InternalServerError("CheckByPostID.unmarshal", "Failed to unmarshal old post: %v", err.Error())
 	}
 
 	return oldPost, nil
@@ -37,7 +37,7 @@ func (r *Repository) CheckByPostID(postID string) (*Post, error) {
 func (r *Repository) CheckBySlug(postSlug, oldPostID string) error {
 	recordsBySlug, err := store.Read(fmt.Sprintf("%v:%v", SlugPrefix, postSlug))
 	if err != nil && err != store.ErrNotFound {
-		return errors.InternalServerError("posts.Save.store-read", "Failed to read post by slug: %v", err.Error())
+		return errors.InternalServerError("CheckBySlug.store-read", "Failed to read post by slug: %v", err.Error())
 	}
 
 	if len(recordsBySlug) > 0 {
@@ -45,10 +45,10 @@ func (r *Repository) CheckBySlug(postSlug, oldPostID string) error {
 		err := json.Unmarshal(recordsBySlug[0].Value, otherSlugPost)
 		if oldPostID != otherSlugPost.ID {
 			if err != nil {
-				return errors.InternalServerError("posts.Save.slug-unmarshal", "Error un-marshalling other post with same slug: %v", err.Error())
+				return errors.InternalServerError("CheckBySlug.slug-unmarshal", "Error un-marshalling other post with same slug: %v", err.Error())
 			}
 		}
-		return errors.BadRequest("posts.Save.slug-check", "An other post with this slug already exists")
+		return errors.BadRequest("CheckBySlug.slug-check", "An other post with this slug already exists")
 	}
 	return nil
 }

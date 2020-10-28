@@ -6,7 +6,7 @@ require (
 	github.com/golang/protobuf v1.4.3
 	github.com/gosimple/slug v1.9.0
 	github.com/micro-community/micro-blog/common v0.0.1
-	github.com/micro/dev v0.0.0-20201026103917-a7b0e7877fa5 // indirect
+	github.com/micro/dev v0.0.0-20201026103917-a7b0e7877fa5
 	github.com/micro/micro/v3 v3.0.0-beta.7
 	google.golang.org/protobuf v1.25.0
 )
