@@ -12,7 +12,7 @@ import (
 )
 
 //UpdatePost to db
-func (p *Repository) UpdatePost(ctx context.Context, oldPost, post *Post) error {
+func (r *Repository) UpdatePost(ctx context.Context, oldPost, post *Post) error {
 
 	bytes, err := json.Marshal(post)
 	if err != nil {
@@ -52,11 +52,11 @@ func (p *Repository) UpdatePost(ctx context.Context, oldPost, post *Post) error 
 	}
 
 	//update tags
-	return p.diffTags(ctx, post.ID, oldPost.Tags, post.Tags)
+	return r.diffTags(ctx, post.ID, oldPost.Tags, post.Tags)
 }
 
 //diffTags to update tags
-func (p *Repository) diffTags(ctx context.Context, resourceID string, oldTagNames, newTagNames []string) error {
+func (r *Repository) diffTags(ctx context.Context, resourceID string, oldTagNames, newTagNames []string) error {
 
 	oldTags := map[string]struct{}{}
 	for _, v := range oldTagNames {
@@ -78,7 +78,7 @@ func (p *Repository) diffTags(ctx context.Context, resourceID string, oldTagName
 	}
 
 	if len(tags2remove) > 0 {
-		_, err := p.Tags.Remove(ctx, &tags.RemoveRequest{
+		_, err := r.Tags.Remove(ctx, &tags.RemoveRequest{
 			ResourceID: resourceID,
 			Type:       TagType,
 			Titles:     tags2remove,
@@ -100,7 +100,7 @@ func (p *Repository) diffTags(ctx context.Context, resourceID string, oldTagName
 
 	if len(tags2add) > 0 {
 
-		_, err := p.Tags.Add(ctx, &tags.AddRequest{
+		_, err := r.Tags.Add(ctx, &tags.AddRequest{
 			ResourceID: resourceID,
 			Type:       TagType,
 			Titles:     tags2add,

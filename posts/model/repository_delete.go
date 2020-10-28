@@ -9,7 +9,7 @@ import (
 )
 
 //DeletePostByID from db
-func (p *Repository) DeletePostByID(ctx context.Context, postID string) error {
+func (r *Repository) DeletePostByID(ctx context.Context, postID string) error {
 	// Delete by ID
 	if err := store.Delete(fmt.Sprintf("%v:%v", IDPrefix, postID)); err != nil {
 		return err
@@ -18,7 +18,7 @@ func (p *Repository) DeletePostByID(ctx context.Context, postID string) error {
 }
 
 //DeletePostBySlug from db
-func (p *Repository) DeletePostBySlug(ctx context.Context, slug string) error {
+func (r *Repository) DeletePostBySlug(ctx context.Context, slug string) error {
 
 	if err := store.Delete(fmt.Sprintf("%v:%v", SlugPrefix, slug)); err != nil {
 		return err
@@ -27,7 +27,7 @@ func (p *Repository) DeletePostBySlug(ctx context.Context, slug string) error {
 }
 
 //DeletePostByTimeStamp from db
-func (p *Repository) DeletePostByTimeStamp(ctx context.Context, createdtimestamp int64) error {
+func (r *Repository) DeletePostByTimeStamp(ctx context.Context, createdtimestamp int64) error {
 
 	if err := store.Delete(fmt.Sprintf("%v:%v", TimeStampPrefix, math.MaxInt64-createdtimestamp)); err != nil {
 		return err

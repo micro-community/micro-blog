@@ -16,6 +16,7 @@ func (p *Posts) Save(ctx context.Context, req *pb.SaveRequest, rsp *pb.SaveRespo
 	logger.Info("Received Posts.Save request")
 
 	if len(req.Id) == 0 {
+		//this is a new post
 		return errors.BadRequest("posts.Save.input-check", "ID is missing")
 	}
 
